@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <title>Giphy Project</title>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Gif Time!</h1>
+
+        <!-- Rendered buttons will get dumped Here  -->
+        <div id="buttons-view"></div>
+
+        <form id="gif-form">
+            <label for="gif-input">Add a gif</label>
+            <input type="text" id="gif-input"><br>
+
+            <!-- Button triggers new gif to be added -->
+            <input id="add-gif" type="submit" value="Add a gif, Yo!">
+        </form>
+
+        <!-- gifs will get dumped here -->
+        <div id="gifs-view"></div>
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+    <script>
+        const API_KEY = 'zB9GX67A68UUQCv1NBX8Rj5XOzCKOTQP';
+
+        var baseQueryURL = `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}`;
+
+        const initialGifButtons = ['penguin', 'star wars'];
+        // const initialGifButtons = ['asdfasdfdsafiousdhi']
+
+
+        function getGif(searchTerm, limit, callback) {
+            const queryURL = baseQueryURL + '&q=' + searchTerm + '&limit=' + limit
+
+            $.ajax({
+                method: 'GET',
+                url: queryURL
+            }).then(callback);
+        }
+
+        function toggleGifDisplay() {
+            const isAnimated = $(this).attr("is-animated")
+           
+            let updatedSrc;
+            if (isAnimated === 'true') {
+                updatedSrc = $(this).attr('still-image')
+                $(this).attr("is-animated", false)
+            } else {
+                updatedSrc = $(this).attr('gif')
+                $(this).attr("is-animated", true)
+            }
+            console.log($(this).children('.gif-image'))
+            $(this).children('.gif-image').attr('src', updatedSrc)
+        }
+
+        function displayGifInfo() {
+
+            var searchTerm = $(this).attr("data-name");
+            // Creates AJAX call for the specific movie button being clicked
+            getGif(searchTerm, 10, function(response) {
+                console.log(response.data)
+                response.data.forEach(gif => {
+                    const stillImageURL = gif.images['fixed_height_still'].url;
+                    const animatedGifURL = gif.images['fixed_height'].url;
+                    const gifDiv = $('<div class=gif-div>')
+                        .attr("data-gif", searchTerm)
+                        .attr('still-image',  stillImageURL)
+                        .attr('gif', animatedGifURL)
+                        .attr('is-animated', false)
+                    const gifImage = $('<img>').addClass('gif-image').attr('src', stillImageURL)
+                    gifDiv.append(gifImage);
+                    $('#gifs-view').append('<h3>hello</h3>', gifDiv);
+                });
+            });
+
+            // Creates AJAX call for the specific movie button being clicked
+
+               
+
+                // Creates a div to hold the movie
+
+                // const ratingElem = $('<h3>').text('Rated: ' + response.Rated)
+                // // Retrieves the Rating Data
+                // // Creates an element to have the rating displayed
+                // // Displays the rating
+
+                // const releaseYearElem = $('<h3>').text('Release year: ' + response.Released)
+                // // Retrieves the release year
+                // // Creates an element to hold the release year
+                // // Displays the release year
+
+                // const plotElem = $('<h3>').text('Plot: ' + response.Plot)
+                // // Retrieves the plot
+                // // Creates an element to hold the plot
+                // // Appends the plot
+
+                // const imageElem = $('<img>').attr('src', response.Poster)
+                // Creates an element to hold the image
+                // Appends the image
+                // Puts the entire Movie above the previous movies.
+                // $('#movies-view').empty();
+                // div.append('<hr>');
+               
+            // });
+        }
+
+        function makeGifButton(gifTitle) {
+            const queryURL = baseQueryURL + '&q=' + gifTitle;
+            getGif(gifTitle, 1, function (response) {
+                // Confirm gif search term exists in Giphy
+                if (response.data.length) {
+                    const gifButton = $('<button>').text(gifTitle).addClass('gif-button').attr('data-name', gifTitle);
+                    $('#buttons-view').append(gifButton);
+                } else {
+                    alert("The gif term " + gifTitle + " does not exist")
+                }
+            });
+        }
+
+        // Function for displaying gif data
+        function renderButtons() {
+            initialGifButtons.forEach(gif => {
+                makeGifButton(gif);
+            });
+        }
+
+        // Hangle clicking add gif button
+        $("#add-gif").on("click", function () {
+            event.preventDefault();
+            const gifName = $('#gif-input').val();
+            makeGifButton(gifName);
+            $('#gif-input').val('');
+        });
+
+        // Calling the renderButtons function to display the initial list of gifs
+        renderButtons();
+
+        // Adding click event listeners to all elements with a class of "gif"
+        $(document).on("click", ".gif-button", displayGifInfo);
+        $(document).on("click", ".gif-div", toggleGifDisplay);
+    </script>
+</body>
+
+</html>
