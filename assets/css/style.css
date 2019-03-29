@@ -1,0 +1,31 @@
+body {
+    background-color: rgb(187, 187, 187);
+}
+
+.gif-button {
+    margin: 5px;
+}
+
+.row {
+    margin-bottom: 15px;
+}
+
+.gif-div {
+    border: 2px solid black;
+    margin: 5px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    background-color: white;
+}
+
+.gif-info {
+    padding-left: 15px;
+}
+
+p {
+    margin: 0;
+}
+
+#gifs-view {
+    border-right: 2px solid black;
+}

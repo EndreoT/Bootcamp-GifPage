@@ -9,6 +9,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="assets/css/style.css">
 
     <title>Giphy Project</title>
 </head>
@@ -16,23 +17,50 @@
 <body>
 
     <div class="container">
-        <h1>Gif Time!</h1>
+        <header>
+            <h1>Gif Time!</h1>
+        </header>
 
         <!-- Rendered buttons will get dumped Here  -->
-        <div id="buttons-view"></div>
+        <div class="row" id="button-to-make-gifs">
+            <div id="buttons-view"></div>
+        </div>
 
-        <form id="gif-form">
-            <label for="gif-input">Add a gif</label>
-            <input type="text" id="gif-input"><br>
+        <div class="row" id="app-control">
+            <form id="gif-form">
+                <div class="form-group">
+                    <label for="gif-input">Choose a gif</label>
+                    <input type="text" class="form-control" id="gif-input">
+                </div>
 
-            <!-- Button triggers new gif to be added -->
-            <input id="add-gif" type="submit" value="Add a gif, Yo!">
-        </form>
+                <!-- Button triggers new gif to be added -->
+                <button id="add-gif" class="btn btn-primary" type="button">Submit</button>
+                <button id="clear-images" class="btn btn-danger" type="button">Clear Image</button>
+                <button id="data-toggle" type="button" class="btn btn-primary" data-toggle="off" aria-pressed="false"
+                    autocomplete="off" disabled>
+                    'Click to allow additional images'
+                </button>
+            </form>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <h3>Found Gifs</h3>
+                <div id="gifs-view"></div>
+            </div>
+
+            <div class='col-md-6'>
+                <h3>Favorite Gifs</h3>
+                <div id="favorite"></div>
+            </div>
+
+        </div>
+
+
 
         <!-- gifs will get dumped here -->
-        <div id="gifs-view"></div>
-    </div>
 
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -45,93 +73,82 @@
     <script>
         const API_KEY = 'zB9GX67A68UUQCv1NBX8Rj5XOzCKOTQP';
 
-        var baseQueryURL = `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}`;
+        const baseQueryURL = `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&rating=G`;
 
-        const initialGifButtons = ['penguin', 'star wars'];
-        // const initialGifButtons = ['asdfasdfdsafiousdhi']
+        const initialGifTopics = ['penguin', 'star wars', 'funny'];
 
+        let noMoreImages = true;
+        let allowAdditionalImages = false;
 
+        // Creates AJAX call for the specific movie search term
         function getGif(searchTerm, limit, callback) {
-            const queryURL = baseQueryURL + '&q=' + searchTerm + '&limit=' + limit
-
+            const queryURL = baseQueryURL + '&q=' + searchTerm + '&limit=' + limit;
             $.ajax({
                 method: 'GET',
                 url: queryURL
             }).then(callback);
         }
 
-        function toggleGifDisplay() {
-            const isAnimated = $(this).attr("is-animated")
-           
-            let updatedSrc;
-            if (isAnimated === 'true') {
-                updatedSrc = $(this).attr('still-image')
-                $(this).attr("is-animated", false)
-            } else {
-                updatedSrc = $(this).attr('gif')
-                $(this).attr("is-animated", true)
+        // Toggles gif display between static image and animated gif on gif view click
+        function toggleGifDisplay(event) {
+            const target = $(event.target);
+            if (target.is("img")) {
+                const dataState = $(this).attr("data-state");
+                let updatedSrc;
+                if (dataState === 'still') {
+                    updatedSrc = $(this).attr('data-animate');
+                    $(this).attr("data-state", 'animated');
+                } else {
+                    updatedSrc = $(this).attr('data-still');
+                    $(this).attr("data-state", 'still');
+                }
+                $(this).children('.gif-image').attr('src', updatedSrc);
+            } else if (target.is('button')) {
+                const parent = target.parent();
+                const parentClone = parent.clone()
+                parentClone.find('button').remove();
+                parentClone.appendTo('#favorite');
             }
-            console.log($(this).children('.gif-image'))
-            $(this).children('.gif-image').attr('src', updatedSrc)
         }
 
         function displayGifInfo() {
+            if (noMoreImages || allowAdditionalImages) {
+                const searchTerm = $(this).attr("data-name");
+                getGif(searchTerm, 10, function (response) {
+                    response.data.forEach(gif => {
+                        // console.log(gif)
+                        const stillImageURL = gif.images['fixed_height_still'].url;
+                        const animatedGifURL = gif.images['fixed_height'].url;
+                        const gifDiv = $('<div class="gif-div text-center">')
+                            .attr("data-name", searchTerm)
+                            .attr('data-still', stillImageURL)
+                            .attr('data-animate', animatedGifURL)
+                            .attr('data-state', 'still')
 
-            var searchTerm = $(this).attr("data-name");
-            // Creates AJAX call for the specific movie button being clicked
-            getGif(searchTerm, 10, function(response) {
-                console.log(response.data)
-                response.data.forEach(gif => {
-                    const stillImageURL = gif.images['fixed_height_still'].url;
-                    const animatedGifURL = gif.images['fixed_height'].url;
-                    const gifDiv = $('<div class=gif-div>')
-                        .attr("data-gif", searchTerm)
-                        .attr('still-image',  stillImageURL)
-                        .attr('gif', animatedGifURL)
-                        .attr('is-animated', false)
-                    const gifImage = $('<img>').addClass('gif-image').attr('src', stillImageURL)
-                    gifDiv.append(gifImage);
-                    $('#gifs-view').append('<h3>hello</h3>', gifDiv);
+                        const gifImage = $('<img>').addClass('col-md-auto gif-image').attr('src', stillImageURL);
+                        const gifTitle = $('<p>').text(gif.title).addClass('gif-info');
+                        const rating = $("<p>").text('Rated: ' + gif.rating).addClass('gif-info');
+                        const addToFavorites = $('<button type="button" class="btn btn-primary favorite">')
+                            .text('Add gif to favorites');
+                        gifDiv.append(gifImage, gifTitle, rating, addToFavorites);
+                        $('#gifs-view').prepend(gifDiv);
+                    });
                 });
-            });
-
-            // Creates AJAX call for the specific movie button being clicked
-
-               
-
-                // Creates a div to hold the movie
-
-                // const ratingElem = $('<h3>').text('Rated: ' + response.Rated)
-                // // Retrieves the Rating Data
-                // // Creates an element to have the rating displayed
-                // // Displays the rating
-
-                // const releaseYearElem = $('<h3>').text('Release year: ' + response.Released)
-                // // Retrieves the release year
-                // // Creates an element to hold the release year
-                // // Displays the release year
-
-                // const plotElem = $('<h3>').text('Plot: ' + response.Plot)
-                // // Retrieves the plot
-                // // Creates an element to hold the plot
-                // // Appends the plot
-
-                // const imageElem = $('<img>').attr('src', response.Poster)
-                // Creates an element to hold the image
-                // Appends the image
-                // Puts the entire Movie above the previous movies.
-                // $('#movies-view').empty();
-                // div.append('<hr>');
-               
-            // });
+            }
+            $('#data-toggle').attr('disabled', false);
+            noMoreImages = false;
         }
 
+        // Creates a gif button if gitTitle is valid and adds the button to buttons-view
         function makeGifButton(gifTitle) {
             const queryURL = baseQueryURL + '&q=' + gifTitle;
             getGif(gifTitle, 1, function (response) {
                 // Confirm gif search term exists in Giphy
                 if (response.data.length) {
-                    const gifButton = $('<button>').text(gifTitle).addClass('gif-button').attr('data-name', gifTitle);
+                    const gifButton = $('<button>')
+                        .text(gifTitle)
+                        .addClass('btn btn-info gif-button')
+                        .attr('data-name', gifTitle);
                     $('#buttons-view').append(gifButton);
                 } else {
                     alert("The gif term " + gifTitle + " does not exist")
@@ -139,9 +156,9 @@
             });
         }
 
-        // Function for displaying gif data
+        // Render buttons for initial gif topics
         function renderButtons() {
-            initialGifButtons.forEach(gif => {
+            initialGifTopics.forEach(gif => {
                 makeGifButton(gif);
             });
         }
@@ -160,7 +177,25 @@
         // Adding click event listeners to all elements with a class of "gif"
         $(document).on("click", ".gif-button", displayGifInfo);
         $(document).on("click", ".gif-div", toggleGifDisplay);
+
+        $('#data-toggle').click(function () {
+            if ($(this).attr('data-toggle') === 'on') {
+                $(this).attr('data-toggle', 'off');
+                $(this).text('Click to allow additional images');
+                allowAdditionalImages = false;
+            } else {
+                $(this).attr('data-toggle', 'on')
+                allowAdditionalImages = true;
+                $(this).text(' Click to prevent additional images');
+            }
+        });
+
+        $('#clear-images').click(function () {
+            $('#gifs-view').empty();
+        });
+
     </script>
+
 </body>
 
 </html>
