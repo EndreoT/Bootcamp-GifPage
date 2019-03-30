@@ -35,8 +35,8 @@
 
                 <!-- Button triggers new gif to be added -->
                 <button id="add-gif" class="btn btn-primary" type="button">Submit</button>
-                <button id="clear-images" class="btn btn-danger" type="button">Clear Image</button>
-                <button id="data-toggle" type="button" class="btn btn-primary" data-toggle="off" aria-pressed="false"
+                
+                <button id="data-toggle" type="button" class="btn btn-warning" data-toggle="off" aria-pressed="false"
                     autocomplete="off" disabled>
                     'Click to allow additional images'
                 </button>
@@ -46,20 +46,17 @@
         <div class="row">
             <div class="col-md-6">
                 <h3>Found Gifs</h3>
+                <button id="clear-images" class="btn btn-danger" type="button">Clear Images</button>
                 <div id="gifs-view"></div>
             </div>
 
             <div class='col-md-6'>
+                <!-- gifs will get dumped here -->
                 <h3>Favorite Gifs</h3>
+                <button id="clear-favorites" class="btn btn-danger" type="button">Clear Favorites</button>
                 <div id="favorite"></div>
             </div>
-
         </div>
-
-
-
-        <!-- gifs will get dumped here -->
-
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -74,15 +71,29 @@
         const API_KEY = 'zB9GX67A68UUQCv1NBX8Rj5XOzCKOTQP';
 
         const baseQueryURL = `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&rating=G`;
+        const baseSearchByIdQueryURL = `https://api.giphy.com/v1/gifs/`;
 
         const initialGifTopics = ['penguin', 'star wars', 'funny'];
 
         let noMoreImages = true;
         let allowAdditionalImages = false;
 
-        // Creates AJAX call for the specific movie search term
-        function getGif(searchTerm, limit, callback) {
+        const storage = {
+            gifIds: []
+        };
+
+        // Creates AJAX call for the specific search term
+        function getGifBySearchTerm(searchTerm, limit, callback) {
             const queryURL = baseQueryURL + '&q=' + searchTerm + '&limit=' + limit;
+            $.ajax({
+                method: 'GET',
+                url: queryURL
+            }).then(callback);
+        }
+
+        // Creates AJAX call for the specific gif id
+        function getGifById(gifId, callback) {
+            const queryURL = baseSearchByIdQueryURL + gifId + '?' + `api_key=${API_KEY}`;
             $.ajax({
                 method: 'GET',
                 url: queryURL
@@ -108,32 +119,49 @@
                 const parentClone = parent.clone()
                 parentClone.find('button').remove();
                 parentClone.appendTo('#favorite');
+
+                // Update local storage
+                const favoritesArray = JSON.parse(localStorage.getItem('storage')) || storage;
+                favoritesArray['gifIds'].push(parent.attr('image-id'));
+                localStorage.setItem('storage', JSON.stringify(favoritesArray));
             }
+        }
+
+        function CreateGifElements(response, gifDestination) {
+            let data = response.data
+            if (!data.length) {
+                data = [data] // Add single object to array
+            }
+            data.forEach(gif => {
+                // console.log(gif)
+                const stillImageURL = gif.images['fixed_height_still'].url;
+                const animatedGifURL = gif.images['fixed_height'].url;
+                const gifDiv = $('<div class="gif-div text-center">')
+                    .attr('data-still', stillImageURL)
+                    .attr('data-animate', animatedGifURL)
+                    .attr('data-state', 'still')
+                    .attr('image-id', gif.id);
+
+                const gifImage = $('<img>').addClass('col-md-auto gif-image').attr('src', stillImageURL);
+                const gifTitle = $('<p>').text(gif.title).addClass('gif-info');
+                const rating = $("<p>").text('Rated: ' + gif.rating).addClass('gif-info');
+
+                gifDiv.append(gifImage, gifTitle, rating);
+
+                if (gifDestination === '#gifs-view') {
+                    gifDiv.append($('<button type="button" class="btn btn-primary favorite">')
+                        .text('Add gif to favorites'));
+                }
+
+
+                $(gifDestination).prepend(gifDiv);
+            });
         }
 
         function displayGifInfo() {
             if (noMoreImages || allowAdditionalImages) {
                 const searchTerm = $(this).attr("data-name");
-                getGif(searchTerm, 10, function (response) {
-                    response.data.forEach(gif => {
-                        // console.log(gif)
-                        const stillImageURL = gif.images['fixed_height_still'].url;
-                        const animatedGifURL = gif.images['fixed_height'].url;
-                        const gifDiv = $('<div class="gif-div text-center">')
-                            .attr("data-name", searchTerm)
-                            .attr('data-still', stillImageURL)
-                            .attr('data-animate', animatedGifURL)
-                            .attr('data-state', 'still')
-
-                        const gifImage = $('<img>').addClass('col-md-auto gif-image').attr('src', stillImageURL);
-                        const gifTitle = $('<p>').text(gif.title).addClass('gif-info');
-                        const rating = $("<p>").text('Rated: ' + gif.rating).addClass('gif-info');
-                        const addToFavorites = $('<button type="button" class="btn btn-primary favorite">')
-                            .text('Add gif to favorites');
-                        gifDiv.append(gifImage, gifTitle, rating, addToFavorites);
-                        $('#gifs-view').prepend(gifDiv);
-                    });
-                });
+                getGifBySearchTerm(searchTerm, 10, response => { CreateGifElements(response, '#gifs-view') });
             }
             $('#data-toggle').attr('disabled', false);
             noMoreImages = false;
@@ -142,7 +170,7 @@
         // Creates a gif button if gitTitle is valid and adds the button to buttons-view
         function makeGifButton(gifTitle) {
             const queryURL = baseQueryURL + '&q=' + gifTitle;
-            getGif(gifTitle, 1, function (response) {
+            getGifBySearchTerm(gifTitle, 1, function (response) {
                 // Confirm gif search term exists in Giphy
                 if (response.data.length) {
                     const gifButton = $('<button>')
@@ -192,6 +220,18 @@
 
         $('#clear-images').click(function () {
             $('#gifs-view').empty();
+        });
+
+        $('#clear-favorites').click(function () {
+            $('#favorite').empty();
+            localStorage.removeItem('storage');
+        });
+
+        $(document).ready(function () {
+            const gifIds = JSON.parse(localStorage.getItem('storage'))['gifIds'];
+            gifIds.forEach(gifId => {
+                getGifById(gifId, response => { CreateGifElements(response, '#favorite') })
+            });
         });
 
     </script>
