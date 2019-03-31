@@ -2,6 +2,10 @@ body {
     background-color: rgb(187, 187, 187);
 }
 
+h1 {
+    text-align: center;
+}
+
 .gif-button {
     margin: 5px;
 }
@@ -28,4 +32,8 @@ p {
 
 #gifs-view {
     border-right: 2px solid black;
+}
+
+#favorite {
+    border-left: 2px solid black;
 }

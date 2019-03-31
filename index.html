@@ -17,6 +17,7 @@
 <body>
 
     <div class="container">
+
         <header>
             <h1>Gif Time!</h1>
         </header>
@@ -26,6 +27,7 @@
             <div id="buttons-view"></div>
         </div>
 
+        <!-- Control form and buttons for app -->
         <div class="row" id="app-control">
             <form id="gif-form">
                 <div class="form-group">
@@ -35,7 +37,8 @@
 
                 <!-- Button triggers new gif to be added -->
                 <button id="add-gif" class="btn btn-primary" type="button">Submit</button>
-                
+
+                <!-- Allow additional buttons if desired -->
                 <button id="data-toggle" type="button" class="btn btn-warning" data-toggle="off" aria-pressed="false"
                     autocomplete="off" disabled>
                     'Click to allow additional images'
@@ -44,17 +47,19 @@
         </div>
 
         <div class="row">
+
             <div class="col-md-6">
                 <h3>Found Gifs</h3>
                 <button id="clear-images" class="btn btn-danger" type="button">Clear Images</button>
+                <!-- All gif views will be here -->
                 <div id="gifs-view"></div>
             </div>
 
             <div class='col-md-6'>
-                <!-- gifs will get dumped here -->
                 <h3>Favorite Gifs</h3>
                 <button id="clear-favorites" class="btn btn-danger" type="button">Clear Favorites</button>
-                <div id="favorite"></div>
+                <!-- gifs favorites here -->
+                <div id="favorites-view"></div>
             </div>
         </div>
     </div>
@@ -67,174 +72,7 @@
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
         crossorigin="anonymous"></script>
 
-    <script>
-        const API_KEY = 'zB9GX67A68UUQCv1NBX8Rj5XOzCKOTQP';
-
-        const baseQueryURL = `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&rating=G`;
-        const baseSearchByIdQueryURL = `https://api.giphy.com/v1/gifs/`;
-
-        const initialGifTopics = ['penguin', 'star wars', 'funny'];
-
-        let noMoreImages = true;
-        let allowAdditionalImages = false;
-
-        const storage = {
-            gifIds: []
-        };
-
-        // Creates AJAX call for the specific search term
-        function getGifBySearchTerm(searchTerm, limit, callback) {
-            const queryURL = baseQueryURL + '&q=' + searchTerm + '&limit=' + limit;
-            $.ajax({
-                method: 'GET',
-                url: queryURL
-            }).then(callback);
-        }
-
-        // Creates AJAX call for the specific gif id
-        function getGifById(gifId, callback) {
-            const queryURL = baseSearchByIdQueryURL + gifId + '?' + `api_key=${API_KEY}`;
-            $.ajax({
-                method: 'GET',
-                url: queryURL
-            }).then(callback);
-        }
-
-        // Toggles gif display between static image and animated gif on gif view click
-        function toggleGifDisplay(event) {
-            const target = $(event.target);
-            if (target.is("img")) {
-                const dataState = $(this).attr("data-state");
-                let updatedSrc;
-                if (dataState === 'still') {
-                    updatedSrc = $(this).attr('data-animate');
-                    $(this).attr("data-state", 'animated');
-                } else {
-                    updatedSrc = $(this).attr('data-still');
-                    $(this).attr("data-state", 'still');
-                }
-                $(this).children('.gif-image').attr('src', updatedSrc);
-            } else if (target.is('button')) {
-                const parent = target.parent();
-                const parentClone = parent.clone()
-                parentClone.find('button').remove();
-                parentClone.appendTo('#favorite');
-
-                // Update local storage
-                const favoritesArray = JSON.parse(localStorage.getItem('storage')) || storage;
-                favoritesArray['gifIds'].push(parent.attr('image-id'));
-                localStorage.setItem('storage', JSON.stringify(favoritesArray));
-            }
-        }
-
-        function CreateGifElements(response, gifDestination) {
-            let data = response.data
-            if (!data.length) {
-                data = [data] // Add single object to array
-            }
-            data.forEach(gif => {
-                // console.log(gif)
-                const stillImageURL = gif.images['fixed_height_still'].url;
-                const animatedGifURL = gif.images['fixed_height'].url;
-                const gifDiv = $('<div class="gif-div text-center">')
-                    .attr('data-still', stillImageURL)
-                    .attr('data-animate', animatedGifURL)
-                    .attr('data-state', 'still')
-                    .attr('image-id', gif.id);
-
-                const gifImage = $('<img>').addClass('col-md-auto gif-image').attr('src', stillImageURL);
-                const gifTitle = $('<p>').text(gif.title).addClass('gif-info');
-                const rating = $("<p>").text('Rated: ' + gif.rating).addClass('gif-info');
-
-                gifDiv.append(gifImage, gifTitle, rating);
-
-                if (gifDestination === '#gifs-view') {
-                    gifDiv.append($('<button type="button" class="btn btn-primary favorite">')
-                        .text('Add gif to favorites'));
-                }
-
-
-                $(gifDestination).prepend(gifDiv);
-            });
-        }
-
-        function displayGifInfo() {
-            if (noMoreImages || allowAdditionalImages) {
-                const searchTerm = $(this).attr("data-name");
-                getGifBySearchTerm(searchTerm, 10, response => { CreateGifElements(response, '#gifs-view') });
-            }
-            $('#data-toggle').attr('disabled', false);
-            noMoreImages = false;
-        }
-
-        // Creates a gif button if gitTitle is valid and adds the button to buttons-view
-        function makeGifButton(gifTitle) {
-            const queryURL = baseQueryURL + '&q=' + gifTitle;
-            getGifBySearchTerm(gifTitle, 1, function (response) {
-                // Confirm gif search term exists in Giphy
-                if (response.data.length) {
-                    const gifButton = $('<button>')
-                        .text(gifTitle)
-                        .addClass('btn btn-info gif-button')
-                        .attr('data-name', gifTitle);
-                    $('#buttons-view').append(gifButton);
-                } else {
-                    alert("The gif term " + gifTitle + " does not exist")
-                }
-            });
-        }
-
-        // Render buttons for initial gif topics
-        function renderButtons() {
-            initialGifTopics.forEach(gif => {
-                makeGifButton(gif);
-            });
-        }
-
-        // Hangle clicking add gif button
-        $("#add-gif").on("click", function () {
-            event.preventDefault();
-            const gifName = $('#gif-input').val();
-            makeGifButton(gifName);
-            $('#gif-input').val('');
-        });
-
-        // Calling the renderButtons function to display the initial list of gifs
-        renderButtons();
-
-        // Adding click event listeners to all elements with a class of "gif"
-        $(document).on("click", ".gif-button", displayGifInfo);
-        $(document).on("click", ".gif-div", toggleGifDisplay);
-
-        $('#data-toggle').click(function () {
-            if ($(this).attr('data-toggle') === 'on') {
-                $(this).attr('data-toggle', 'off');
-                $(this).text('Click to allow additional images');
-                allowAdditionalImages = false;
-            } else {
-                $(this).attr('data-toggle', 'on')
-                allowAdditionalImages = true;
-                $(this).text(' Click to prevent additional images');
-            }
-        });
-
-        $('#clear-images').click(function () {
-            $('#gifs-view').empty();
-        });
-
-        $('#clear-favorites').click(function () {
-            $('#favorite').empty();
-            localStorage.removeItem('storage');
-        });
-
-        $(document).ready(function () {
-            const gifIds = JSON.parse(localStorage.getItem('storage'))['gifIds'];
-            gifIds.forEach(gifId => {
-                getGifById(gifId, response => { CreateGifElements(response, '#favorite') })
-            });
-        });
-
-    </script>
+    <script src='./assets/javascript/app.js'></script>
 
 </body>
 
