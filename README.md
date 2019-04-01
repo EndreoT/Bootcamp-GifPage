@@ -1,4 +1,2 @@
-# Bootcamp-GifPage
-Uses Ajax requests to the GIPHY API to make a dynamic web page that populates with gifs of your choice.
-Favorited gifs are saved in local storage and are retrieved on page reload. All favorited gifs or only select gifs can 
-be removed from favorites.
+# Gif Retriever 
+A dynamic web page that populates with gifs of your choice. Uses asynchronous Ajax requests to the GIPHY API. Individual gifs can be favorited and saved or removed from local storage using jQuery, and are retrieved on page reload. Gifs change from static to animated state on click event.
