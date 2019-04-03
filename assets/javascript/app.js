@@ -13,7 +13,7 @@ const storage = {
 	gifIds: []
 };
 
-// Creates AJAX call for the specific search term
+// AJAX call for specific search term
 function getGifBySearchTerm(searchTerm, limit, callback) {
 	const queryURL = baseQueryURL + '&q=' + searchTerm + '&limit=' + limit;
 	$.ajax({
@@ -22,7 +22,7 @@ function getGifBySearchTerm(searchTerm, limit, callback) {
 	}).then(callback);
 }
 
-// Creates AJAX call for the specific gif id
+// AJAX call for specific gif id
 function getGifById(gifId, callback) {
 	const queryURL = baseSearchByIdQueryURL + gifId + '?' + `api_key=${API_KEY}`;
 	$.ajax({
@@ -46,41 +46,41 @@ function toggleGifDisplay(event) {
 		}
 		$(this).children('.gif-image').attr('src', updatedSrc);
 	} else if (target.is('button')) { // Add gif or remove gif from favorites
-
 		const favoritesObj = JSON.parse(localStorage.getItem('storage')) || storage;
 
 		if (target.hasClass('remove-from-favorites')) { // Remove from favorites
-			// Remove from favorites in DOM 
-			const parent = target.parent()
-			const gifId = parent.attr('image-id')
+			// Remove element from favorites in DOM 
+			const parent = target.parent();
+			const gifId = parent.attr('image-id');
 			parent.remove();
 
 			// Remove gif id from localStorage
-			const favoritesArray = favoritesObj['gifIds']
+			const favoritesArray = favoritesObj['gifIds'];
 			const filteredArray = favoritesArray.filter(function (ele) {
 				return ele !== gifId;
 			});;
-			favoritesObj['gifIds'] = filteredArray
+			favoritesObj['gifIds'] = filteredArray;
 		} else { // Add to favorites
 			// Make deep copy of selected gif and add it to favorites
 			const parent = target.parent();
-			const parentClone = parent.clone()
+			const parentClone = parent.clone();
 			// Modify gif button for favorites section
-			configureButtonForFavoritesView(parentClone.find('button'))
+			configureButtonForFavoritesView(parentClone.find('button'));
 			parentClone.appendTo('#favorites-view');
 
 			// Add gif id to favorites object
 			favoritesObj['gifIds'].push(parent.attr('image-id'));
 		}
-		// Update local storage with gif id favorites
+		// Update local storage with gif favorites ids
 		localStorage.setItem('storage', JSON.stringify(favoritesObj));
 	}
 }
 
+// Creates gif elements ands adds them to DOM
 function CreateGifElements(response, gifDestination) {
 	let data = response.data
 	if (!data.length) {
-		data = [data] // Add single object to array
+		data = [data] // Wrap object in array
 	}
 	data.forEach(gif => {
 		const stillImageURL = gif.images['fixed_height_still'].url;
@@ -115,7 +115,7 @@ function configureButtonForFavoritesView(buttonElement) {
 
 function displayGifInfo() {
 	// Display a number of gifs determined by button name clicked
-	if (noMoreImages || allowAdditionalImages) {
+	if (noMoreImages || allowAdditionalImages) { // Only adds more gif elements if allowed by the user
 		const searchTerm = $(this).attr("data-name");
 		getGifBySearchTerm(searchTerm, 10, response => { CreateGifElements(response, '#gifs-view') });
 	}
@@ -125,9 +125,7 @@ function displayGifInfo() {
 
 // Creates a gif button if gifTitle is valid and adds the button to buttons-view
 function makeGifButton(gifTitle) {
-	const queryURL = baseQueryURL + '&q=' + gifTitle;
 	getGifBySearchTerm(gifTitle, 1, function (response) {
-
 		if (response.data.length) { // Confirm gif search term exists in Giphy
 			const gifButton = $('<button>')
 				.text(gifTitle)
