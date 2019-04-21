@@ -3,7 +3,7 @@
 ### Description
 A dynamic web page that populates with gifs of your choice. 
 
-# Motivation
+### Motivation
 For those who want to easily search for and save favorite gifs
 
 ### Results
